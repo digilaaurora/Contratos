@@ -1,0 +1,235 @@
+/* Modal Authentication System */
+#login-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+
+#login-modal-overlay.show {
+  display: flex;
+}
+
+#login-modal-content {
+  background-color: white;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+#login-modal-content h2 {
+  color: var(--color-primario);
+  margin-bottom: 10px;
+  margin-top: 0;
+  font-size: 1.8rem;
+}
+
+#login-modal-content .subtitle {
+  color: #6b7280;
+  margin-bottom: 30px;
+  font-size: 1rem;
+}
+
+#login-modal-content .form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+#login-modal-content .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--color-primario);
+}
+
+#login-modal-content .form-group input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+#login-modal-content .form-group input:focus {
+  outline: none;
+  border-color: var(--color-naranja-claro);
+  box-shadow: 0 0 0 3px rgba(255, 180, 77, 0.1);
+}
+
+#login-modal-btn {
+  width: 100%;
+  background-color: var(--color-naranja-claro);
+  color: white;
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
+}
+
+#login-modal-btn:hover {
+  background-color: var(--color-naranja);
+}
+
+#login-modal-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+#login-modal-error {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 8px;
+  display: none;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-in;
+}
+
+#login-modal-error.error-message {
+  background-color: #fee;
+  color: #c53030;
+  border: 1px solid #fed7d7;
+}
+
+#login-modal-error.success-message {
+  background-color: #f0fff4;
+  color: #2f855a;
+  border: 1px solid #c6f6d5;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--color-naranja);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* User Widget - Visible en Sidebar */
+#user-widget {
+  position: static;
+  background-color: #ffffff;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid #eceff3;
+  box-shadow: none;
+  display: none; /* Se muestra via JS anadiendo clase .show */
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  width: 56px;
+  height: 56px;
+  flex-direction: column;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e6f0fb;
+  color: #1e6bb8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #2f3b47;
+  font-size: 12px;
+  text-align: left;
+  opacity: 0;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#user-widget.show {
+  display: flex;
+}
+
+#user-widget .user-logout {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+#user-widget .user-logout svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+#user-widget .user-logout:hover {
+  background-color: #fecaca;
+}
+
+#user-widget .user-logout:focus-visible {
+  outline: 2px solid #fca5a5;
+  outline-offset: 2px;
+}

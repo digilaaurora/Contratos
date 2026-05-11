@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Contratos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📄</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="auth-modal.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div id="login-modal-overlay">
+    <div id="login-modal-content">
+      <h2>Iniciar Sesión</h2>
+      <p class="subtitle">Accede al sistema de contratos internos</p>
+
+      <form id="login-modal-form">
+        <div class="form-group">
+          <label for="login-modal-email">Email:</label>
+          <input type="email" id="login-modal-email" required autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="login-modal-password">Contraseña:</label>
+          <input type="password" id="login-modal-password" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" id="login-modal-btn">Iniciar Sesión</button>
+      </form>
+
+      <div id="login-modal-error"></div>
+    </div>
+  </div>
+
+  <nav class="breadcrumb-wrapper" aria-label="Breadcrumb">
+    <div id="breadcrumbContainer" class="breadcrumb-container"></div>
+  </nav>
+
+  <section id="view-inicio" class="view-panel active">
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="Navegacion principal">
+        <div class="sidebar-brand">
+          <img
+            id="sidebarLogo"
+            class="sidebar-logo"
+            src="logo_sidebar.png"
+            data-la-logo="logo_sidebar.png"
+            data-al-logo="AL_sidebar.png"
+            data-company="LA"
+            alt="Logo"
+            title="Doble click para cambiar de empresa"
+          />
+          <span class="sidebar-title">Contratos</span>
+        </div>
+        <nav class="sidebar-nav" aria-label="Secciones">
+          <button class="sidebar-item" type="button" data-section="alta-trabajador">
+            <span class="sidebar-icon">👤</span>
+            <span class="sidebar-text">Añadir trabajador</span>
+          </button>
+          <button class="sidebar-item active" type="button" data-section="panel" aria-current="page">
+            <span class="sidebar-icon">🏠</span>
+            <span class="sidebar-text">Inicio</span>
+          </button>
+          <button class="sidebar-item" type="button" data-section="contratos">
+            <span class="sidebar-icon">📑</span>
+            <span class="sidebar-text">Contratos</span>
+          </button>
+          <button class="sidebar-item" type="button" data-section="revisiones">
+            <span class="sidebar-icon">🧭</span>
+            <span class="sidebar-text">Revisiones</span>
+          </button>
+          <button class="sidebar-item" type="button" data-section="reportes">
+            <span class="sidebar-icon">📊</span>
+            <span class="sidebar-text">Reportes</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <button id="tab-configuracion" class="sidebar-item sidebar-item--config" type="button">
+            <span class="sidebar-icon">⚙</span>
+            <span class="sidebar-text">Configuracion</span>
+          </button>
+
+          <div class="user-widget-container">
+            <div id="user-widget">
+              <div id="user-initials" class="user-avatar" aria-hidden="true"></div>
+              <span id="user-name" class="user-name" aria-hidden="true"></span>
+              <button class="user-logout" type="button" onclick="handleLogout()" aria-label="Cerrar sesión" title="Cerrar sesión">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 4a8 8 0 1 0 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M12 4l4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M14 4l0 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M4 12h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M11 9l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="content-area">
+        <section id="alta-trabajador" class="content-panel">
+          <h1>Añadir trabajador</h1>
+          <div class="form-card">
+            <form id="form-alta-trabajador" novalidate>
+              <div class="form-grid">
+                <div class="form-field form-field--full">
+                  <label for="at-nombre">Nombre y apellidos <span class="form-required">*</span></label>
+                  <input type="text" id="at-nombre" name="nombre_y_apellidos" required placeholder="Nombre completo del trabajador" />
+                </div>
+                <div class="form-field">
+                  <label for="at-empresa">Empresa <span class="form-required">*</span></label>
+                  <select id="at-empresa" name="empresa" required disabled>
+                    <option value="">Seleccionar...</option>
+                    <option value="AL">AL</option>
+                    <option value="LA">LA</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="at-tipo-trabajador">Tipo de trabajador</label>
+                  <input type="text" id="at-tipo-trabajador" name="tipo_trabajador" placeholder="Tipo de trabajador" />
+                </div>
+                <div class="form-field">
+                  <label for="at-tipo-contrato">Tipo de contrato</label>
+                  <select id="at-tipo-contrato" name="tipo_contrato">
+                    <option value="">Seleccionar...</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="at-jornada">Jornada</label>
+                  <input type="text" id="at-jornada" name="jornada" placeholder="Jornada laboral" />
+                </div>
+                <div class="form-field">
+                  <label for="at-fecha-inicio">Fecha de inicio</label>
+                  <input type="date" id="at-fecha-inicio" name="fecha_inicio" />
+                </div>
+                <div class="form-field">
+                  <label for="at-fecha-firma">Fecha de firma del contrato</label>
+                  <input type="date" id="at-fecha-firma" name="fecha_firma_contrato" />
+                </div>
+                <div class="form-field">
+                  <label for="at-codigo-ncs">Código NCS</label>
+                  <input type="text" id="at-codigo-ncs" name="codigo_ncs" placeholder="Código NCS" maxlength="50" />
+                </div>
+                <div class="form-field">
+                  <label for="at-codigo-fichaje">Código de fichaje</label>
+                  <input type="text" id="at-codigo-fichaje" name="codigo_fichaje" placeholder="Código de fichaje" maxlength="50" />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="reset" class="btn-secondary">Limpiar</button>
+                <button type="submit" class="btn-primary">Guardar trabajador</button>
+              </div>
+            </form>
+            <div id="alta-trabajador-msg" class="form-msg" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section id="panel" class="content-panel active">
+          <h1>Inicio</h1>
+          <p>Vista principal de contratos. Usa el menu lateral para navegar.</p>
+          <div class="stat-grid">
+            <article class="stat-card">
+              <span class="stat-label">Pendientes</span>
+              <span class="stat-value">12</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">En revision</span>
+              <span class="stat-value">4</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Firmados</span>
+              <span class="stat-value">38</span>
+            </article>
+          </div>
+        </section>
+
+        <section id="contratos" class="content-panel">
+          <h1>Contratos</h1>
+          <p>Panel de seguimiento de contratos y renovaciones.</p>
+          <div class="placeholder-card">Contenido operativo de contratos.</div>
+        </section>
+
+        <section id="revisiones" class="content-panel">
+          <h1>Revisiones</h1>
+          <p>Estado de revisiones internas y aprobaciones.</p>
+          <div class="placeholder-card">Listado de revisiones pendientes.</div>
+        </section>
+
+        <section id="reportes" class="content-panel">
+          <h1>Reportes</h1>
+          <p>Indicadores y reportes de contratos.</p>
+          <div class="placeholder-card">Dashboard de reportes.</div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <section id="view-configuracion" class="view-panel">
+    <main class="content-area content-area--config">
+      <section id="config-menu" class="emesa-config-menu-view active">
+        <div class="emesa-config-menu-shell">
+          <div class="emesa-config-menu-grid">
+            <button class="emesa-config-card" type="button" data-target="contratos">
+              <span class="emesa-config-card__icon" aria-hidden="true">📑</span>
+              <span class="emesa-config-card__title">Contratos</span>
+            </button>
+            <button class="emesa-config-card" type="button" data-target="puestos">
+              <span class="emesa-config-card__icon" aria-hidden="true">🪑</span>
+              <span class="emesa-config-card__title">Puestos</span>
+            </button>
+            <button class="emesa-config-card" type="button" data-target="settings">
+              <span class="emesa-config-card__icon" aria-hidden="true">⚙️</span>
+              <span class="emesa-config-card__title">Settings</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="config-detail" class="config-detail is-hidden">
+        <div class="config-detail__card">
+          <h2 id="config-detail-title">Configuracion</h2>
+          <p id="config-detail-desc">Selecciona un acceso para ver detalles.</p>
+        </div>
+      </section>
+
+      <section id="config-contratos" class="config-contratos-view is-hidden">
+        <div class="config-contratos-shell">
+          <div class="config-contratos-card">
+            <div class="config-contratos-header">
+              <h2>Tipos de contrato</h2>
+              <p class="config-contratos-hint">Arrastra los tipos para reordenarlos. Ese orden se reflejará en el desplegable del formulario.</p>
+            </div>
+            <div class="config-contratos-add">
+              <input type="text" id="nuevo-tipo-contrato" placeholder="Nuevo tipo de contrato..." maxlength="100" />
+              <button type="button" id="btn-add-tipo-contrato" class="btn-primary">Añadir</button>
+            </div>
+            <ul id="tipos-contrato-list" class="tipos-list" aria-label="Tipos de contrato"></ul>
+            <div class="config-contratos-actions">
+              <span id="tipos-contrato-msg" class="form-msg" aria-live="polite"></span>
+              <button type="button" id="btn-save-tipos-orden" class="btn-primary">Guardar orden</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="config-settings" class="config-settings-view is-hidden">
+        <div class="config-settings-shell">
+          <div class="config-settings-header">
+            <h2>Settings generales</h2>
+            <button type="button" id="btn-new-setting" class="btn-primary">+ Nueva configuración</button>
+          </div>
+          <div id="settings-list" class="settings-list" aria-live="polite"></div>
+          <div id="settings-form-wrapper" class="settings-form-wrapper is-hidden">
+            <div class="settings-form-card">
+              <h3 id="settings-form-title">Nueva configuración</h3>
+              <div class="form-grid">
+                <div class="form-field form-field--full">
+                  <label for="s-nombre">Nombre</label>
+                  <input type="text" id="s-nombre" placeholder="Nombre de la configuración" maxlength="100" />
+                </div>
+                <div class="form-field">
+                  <label for="s-horas">Horas convenio</label>
+                  <input type="number" id="s-horas" min="1" max="168" step="0.5" placeholder="40" />
+                </div>
+                <div class="form-field">
+                  <label for="s-version">Versión</label>
+                  <input type="text" id="s-version" placeholder="1.0.0" maxlength="20" />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" id="btn-cancel-setting" class="btn-secondary">Cancelar</button>
+                <button type="button" id="btn-save-setting" class="btn-primary">Guardar</button>
+              </div>
+              <div id="settings-form-msg" class="form-msg" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <script src="app.js"></script>
+  <script src="env.js"></script>
+  <script src="auth-system.js"></script>
+</body>
+</html>
