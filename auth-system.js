@@ -24,29 +24,78 @@
       const { createClient } = window.supabase;
       window.supabase = createClient(
         this.supabaseConfig.url,
-        this.supabaseConfig.key
+        this.supabaseConfig.key,
+        {
+          auth: {
+            storage: window.localStorage,
+            persistSession: true,
+            detectSessionInUrl: false,
+          }
+        }
       );
       window.supabaseClient = window.supabase;
       window.supabaseInitialized = true;
     }
 
     this.setupModalEventListeners();
+    this._setupStorageWatcher();
 
-    // Reaccionar a cambios de sesion
+    // onAuthStateChange es la única fuente de verdad.
+    // Maneja INITIAL_SESSION (recarga de página), SIGNED_IN (login nuevo)
+    // y TOKEN_REFRESHED, además de SIGNED_OUT.
     window.supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session) {
+      if (
+        (event === "INITIAL_SESSION" ||
+          event === "SIGNED_IN" ||
+          event === "TOKEN_REFRESHED") &&
+        session
+      ) {
+        // En recarga de página, verificar que el token almacenado es válido.
+        // Si está caducado o roto, limpiar y mostrar el login.
+        if (event === "INITIAL_SESSION") {
+          const { error } = await window.supabase.auth.getUser();
+          if (error) {
+            await window.supabase.auth.signOut();
+            this.showLoginModal();
+            return;
+          }
+        }
         await this._onSignedIn(session);
+      } else if (event === "INITIAL_SESSION" && !session) {
+        // No hay sesión activa al cargar la página
+        this.showLoginModal();
       } else if (event === "SIGNED_OUT") {
         this._onSignedOut();
       }
     });
+  }
 
-    // Comprobar si ya hay sesion activa
+  // Detecta borrado de storage con la página ya cargada
+  _setupStorageWatcher() {
+    // Evento storage: se dispara cuando otra pestaña borra el storage,
+    // o en algunos navegadores cuando se borra desde DevTools
+    window.addEventListener("storage", async (e) => {
+      if (e.key === null) {
+        // localStorage.clear() fue llamado
+        await this._checkSessionAlive();
+      }
+    });
+
+    // Al recuperar el foco de la pestaña verificamos que la sesión sigue viva
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible") {
+        await this._checkSessionAlive();
+      }
+    });
+  }
+
+  async _checkSessionAlive() {
+    // Solo verificar si ya teníamos sesión activa
+    const cached = sessionStorage.getItem(this.userKey);
+    if (!cached) return;
     const { data: { session } } = await window.supabase.auth.getSession();
-    if (session) {
-      await this._onSignedIn(session);
-    } else {
-      this.showLoginModal();
+    if (!session) {
+      this._onSignedOut();
     }
   }
 
@@ -158,6 +207,9 @@
 
     loginBtn.disabled = true;
     loginBtn.innerHTML = "<span class=\"login-loading\"></span>Verificando...";
+
+    // Limpiar cualquier sesión caducada antes de hacer login nuevo
+    await window.supabase.auth.signOut({ scope: "local" });
 
     const { error } = await window.supabase.auth.signInWithPassword({ email, password });
 

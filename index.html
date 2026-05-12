@@ -7,7 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📄</text></svg>" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="auth-modal.css" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
 </head>
 <body>
   <div id="login-modal-overlay">
@@ -58,21 +58,25 @@
             <span class="sidebar-icon">👤</span>
             <span class="sidebar-text">Añadir trabajador</span>
           </button>
-          <button class="sidebar-item active" type="button" data-section="panel" aria-current="page">
-            <span class="sidebar-icon">🏠</span>
-            <span class="sidebar-text">Inicio</span>
+          <button class="sidebar-item" type="button" data-section="firma-contrato">
+            <span class="sidebar-icon">✍️</span>
+            <span class="sidebar-text">NCS - Firma contrato</span>
           </button>
-          <button class="sidebar-item" type="button" data-section="contratos">
-            <span class="sidebar-icon">📑</span>
-            <span class="sidebar-text">Contratos</span>
+          <button class="sidebar-item" type="button" data-section="alta-ss">
+            <span class="sidebar-icon">🏥</span>
+            <span class="sidebar-text">Alta SS</span>
           </button>
-          <button class="sidebar-item" type="button" data-section="revisiones">
-            <span class="sidebar-icon">🧭</span>
-            <span class="sidebar-text">Revisiones</span>
+          <button class="sidebar-item" type="button" data-section="registro-contrato">
+            <span class="sidebar-icon">📋</span>
+            <span class="sidebar-text">Registro contrato</span>
           </button>
-          <button class="sidebar-item" type="button" data-section="reportes">
-            <span class="sidebar-icon">📊</span>
-            <span class="sidebar-text">Reportes</span>
+          <button class="sidebar-item" type="button" data-section="carpeta">
+            <span class="sidebar-icon">📁</span>
+            <span class="sidebar-text">Carpeta</span>
+          </button>
+          <button class="sidebar-item" type="button" data-section="cerrado">
+            <span class="sidebar-icon">✅</span>
+            <span class="sidebar-text">Cerrado</span>
           </button>
         </nav>
 
@@ -119,36 +123,37 @@
                   </select>
                 </div>
                 <div class="form-field">
-                  <label for="at-tipo-trabajador">Tipo de trabajador</label>
-                  <input type="text" id="at-tipo-trabajador" name="tipo_trabajador" placeholder="Tipo de trabajador" />
+                  <label for="at-fecha-inicio">Fecha de inicio <span class="form-required">*</span></label>
+                  <input type="date" id="at-fecha-inicio" name="fecha_inicio" />
                 </div>
                 <div class="form-field">
-                  <label for="at-tipo-contrato">Tipo de contrato</label>
+                  <label for="at-tipo-trabajador">Tipo de trabajador <span class="form-required">*</span></label>
+                  <select id="at-tipo-trabajador" name="tipo_trabajador">
+                    <option value="">Seleccionar...</option>
+                  </select>
+                  <input type="text" id="at-tipo-trabajador-otros" name="tipo_trabajador_otros" placeholder="Especifica el tipo de trabajador" style="margin-top:6px;display:none;" maxlength="100" />
+                </div>
+                <div class="form-field">
+                  <label for="at-tipo-contrato">Tipo de contrato <span class="form-required">*</span></label>
                   <select id="at-tipo-contrato" name="tipo_contrato">
                     <option value="">Seleccionar...</option>
                   </select>
                 </div>
                 <div class="form-field">
-                  <label for="at-jornada">Jornada</label>
-                  <input type="text" id="at-jornada" name="jornada" placeholder="Jornada laboral" />
+                  <label for="at-convenio">Convenio <span class="form-required">*</span></label>
+                  <select id="at-convenio" name="id_convenio">
+                    <option value="">Seleccionar...</option>
+                  </select>
                 </div>
                 <div class="form-field">
-                  <label for="at-fecha-inicio">Fecha de inicio</label>
-                  <input type="date" id="at-fecha-inicio" name="fecha_inicio" />
+                  <label for="at-jornada">Jornada <span class="form-required">*</span></label>
+                  <div class="jornada-input-wrapper">
+                    <input type="text" id="at-jornada" name="jornada" placeholder="HH:MM" maxlength="5" autocomplete="off" />
+                    <span id="at-jornada-decimal" class="jornada-decimal"></span>
+                    <span id="at-jornada-coeficiente" class="jornada-decimal"></span>
+                  </div>
                 </div>
-                <div class="form-field">
-                  <label for="at-fecha-firma">Fecha de firma del contrato</label>
-                  <input type="date" id="at-fecha-firma" name="fecha_firma_contrato" />
-                </div>
-                <div class="form-field">
-                  <label for="at-codigo-ncs">Código NCS</label>
-                  <input type="text" id="at-codigo-ncs" name="codigo_ncs" placeholder="Código NCS" maxlength="50" />
-                </div>
-                <div class="form-field">
-                  <label for="at-codigo-fichaje">Código de fichaje</label>
-                  <input type="text" id="at-codigo-fichaje" name="codigo_fichaje" placeholder="Código de fichaje" maxlength="50" />
-                </div>
-              </div>
+
               <div class="form-actions">
                 <button type="reset" class="btn-secondary">Limpiar</button>
                 <button type="submit" class="btn-primary">Guardar trabajador</button>
@@ -177,22 +182,39 @@
           </div>
         </section>
 
-        <section id="contratos" class="content-panel">
-          <h1>Contratos</h1>
-          <p>Panel de seguimiento de contratos y renovaciones.</p>
-          <div class="placeholder-card">Contenido operativo de contratos.</div>
+        <section id="firma-contrato" class="content-panel">
+          <h1>NCS - Firma contrato</h1>
+          <div id="firma-contrato-table-wrapper" class="workers-table-wrapper">
+            <p class="workers-table-loading">Cargando...</p>
+          </div>
         </section>
 
-        <section id="revisiones" class="content-panel">
-          <h1>Revisiones</h1>
-          <p>Estado de revisiones internas y aprobaciones.</p>
-          <div class="placeholder-card">Listado de revisiones pendientes.</div>
+        <section id="alta-ss" class="content-panel">
+          <h1>Alta SS</h1>
+          <div id="alta-ss-table-wrapper" class="workers-table-wrapper">
+            <p class="workers-table-loading">Cargando...</p>
+          </div>
         </section>
 
-        <section id="reportes" class="content-panel">
-          <h1>Reportes</h1>
-          <p>Indicadores y reportes de contratos.</p>
-          <div class="placeholder-card">Dashboard de reportes.</div>
+        <section id="registro-contrato" class="content-panel">
+          <h1>Registro contrato</h1>
+          <div id="registro-contrato-table-wrapper" class="workers-table-wrapper">
+            <p class="workers-table-loading">Cargando...</p>
+          </div>
+        </section>
+
+        <section id="carpeta" class="content-panel">
+          <h1>Carpeta</h1>
+          <div id="carpeta-table-wrapper" class="workers-table-wrapper">
+            <p class="workers-table-loading">Cargando...</p>
+          </div>
+        </section>
+
+        <section id="cerrado" class="content-panel">
+          <h1>Cerrado</h1>
+          <div id="cerrado-table-wrapper" class="workers-table-wrapper">
+            <p class="workers-table-loading">Cargando...</p>
+          </div>
         </section>
       </main>
     </div>
@@ -203,20 +225,94 @@
       <section id="config-menu" class="emesa-config-menu-view active">
         <div class="emesa-config-menu-shell">
           <div class="emesa-config-menu-grid">
+            <button class="emesa-config-card" type="button" data-target="app">
+              <span class="emesa-config-card__icon" aria-hidden="true">🖥️</span>
+              <span class="emesa-config-card__title">App</span>
+            </button>
             <button class="emesa-config-card" type="button" data-target="contratos">
               <span class="emesa-config-card__icon" aria-hidden="true">📑</span>
               <span class="emesa-config-card__title">Contratos</span>
             </button>
-            <button class="emesa-config-card" type="button" data-target="puestos">
-              <span class="emesa-config-card__icon" aria-hidden="true">🪑</span>
-              <span class="emesa-config-card__title">Puestos</span>
+            <button class="emesa-config-card" type="button" data-target="convenios">
+              <span class="emesa-config-card__icon" aria-hidden="true">⏱️</span>
+              <span class="emesa-config-card__title">Horas convenio</span>
             </button>
-            <button class="emesa-config-card" type="button" data-target="settings">
-              <span class="emesa-config-card__icon" aria-hidden="true">⚙️</span>
-              <span class="emesa-config-card__title">Settings</span>
+            <button class="emesa-config-card" type="button" data-target="tipos-trabajador">
+              <span class="emesa-config-card__icon" aria-hidden="true">👷</span>
+              <span class="emesa-config-card__title">Tipos de trabajador</span>
             </button>
           </div>
         </div>
+      </section>
+
+      <section id="config-app" class="emesa-config-menu-view is-hidden">
+
+        <!-- Sub-menú: qué configurar -->
+        <div id="config-app-menu" class="emesa-config-menu-shell">
+          <div class="emesa-config-menu-grid">
+            <button class="emesa-config-card" type="button" data-appconfig="firma-contrato">
+              <span class="emesa-config-card__icon" aria-hidden="true">✍️</span>
+              <span class="emesa-config-card__title">Firma contrato</span>
+              <span class="emesa-config-card__subtitle">Columnas</span>
+            </button>
+            <button class="emesa-config-card" type="button" data-appconfig="alta-ss">
+              <span class="emesa-config-card__icon" aria-hidden="true">🏥</span>
+              <span class="emesa-config-card__title">Alta SS</span>
+              <span class="emesa-config-card__subtitle">Columnas</span>
+            </button>
+            <button class="emesa-config-card" type="button" data-appconfig="registro-contrato">
+              <span class="emesa-config-card__icon" aria-hidden="true">📋</span>
+              <span class="emesa-config-card__title">Registro contrato</span>
+              <span class="emesa-config-card__subtitle">Columnas</span>
+            </button>
+            <button class="emesa-config-card" type="button" data-appconfig="carpeta">
+              <span class="emesa-config-card__icon" aria-hidden="true">📁</span>
+              <span class="emesa-config-card__title">Carpeta</span>
+              <span class="emesa-config-card__subtitle">Columnas</span>
+            </button>
+            <button class="emesa-config-card" type="button" data-appconfig="cerrado">
+              <span class="emesa-config-card__icon" aria-hidden="true">✅</span>
+              <span class="emesa-config-card__title">Cerrado</span>
+              <span class="emesa-config-card__subtitle">Columnas</span>
+            </button>
+            <button class="emesa-config-card" type="button" data-appconfig="globos">
+              <span class="emesa-config-card__icon" aria-hidden="true">🔔</span>
+              <span class="emesa-config-card__title">Globos</span>
+              <span class="emesa-config-card__subtitle">Sidebar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Editor de columnas (compartido para todas las secciones) -->
+        <div id="config-app-columnas" class="config-contratos-shell is-hidden">
+          <div class="config-contratos-card">
+            <div class="config-contratos-header">
+              <h2 id="config-app-columnas-title">Columnas</h2>
+              <p class="config-contratos-hint">Activa o desactiva columnas, edita su nombre y arrastra para reordenarlas.</p>
+            </div>
+            <ul id="config-app-columnas-list" class="tipos-list" aria-label="Columnas de la tabla"></ul>
+            <div class="config-contratos-actions">
+              <span id="config-app-columnas-msg" class="form-msg" aria-live="polite"></span>
+              <button type="button" id="btn-save-app-columnas" class="btn-primary">Guardar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editor de globos del sidebar -->
+        <div id="config-app-globos" class="config-contratos-shell is-hidden">
+          <div class="config-contratos-card">
+            <div class="config-contratos-header">
+              <h2>Globos del sidebar</h2>
+              <p class="config-contratos-hint">Configura qué contador mostrar junto a cada sección del menú lateral.</p>
+            </div>
+            <div id="config-app-globos-list" aria-label="Globos del sidebar"></div>
+            <div class="config-contratos-actions">
+              <span id="config-app-globos-msg" class="form-msg" aria-live="polite"></span>
+              <button type="button" id="btn-save-app-globos" class="btn-primary">Guardar</button>
+            </div>
+          </div>
+        </div>
+
       </section>
 
       <section id="config-detail" class="config-detail is-hidden">
@@ -246,35 +342,56 @@
         </div>
       </section>
 
-      <section id="config-settings" class="config-settings-view is-hidden">
-        <div class="config-settings-shell">
-          <div class="config-settings-header">
-            <h2>Settings generales</h2>
-            <button type="button" id="btn-new-setting" class="btn-primary">+ Nueva configuración</button>
+      <section id="config-convenios" class="config-convenios-view is-hidden">
+        <div class="config-convenios-shell">
+          <div class="config-convenios-card">
+            <div class="config-convenios-header">
+              <h2>Horas convenio</h2>
+              <button type="button" id="btn-new-convenio" class="btn-primary">+ Nuevo convenio</button>
+            </div>
+            <div id="convenios-list" class="convenios-list" aria-live="polite"></div>
+            <div id="convenios-form-wrapper" class="settings-form-wrapper is-hidden">
+              <div class="settings-form-card">
+                <h3 id="convenios-form-title">Nuevo convenio</h3>
+                <div class="form-grid">
+                  <div class="form-field form-field--full">
+                    <label for="cv-descripcion">Descripción convenio <span class="form-required">*</span></label>
+                    <input type="text" id="cv-descripcion" placeholder="Descripción del convenio" maxlength="200" />
+                  </div>
+                  <div class="form-field">
+                    <label for="cv-horas">Horas convenio <span class="form-required">*</span></label>
+                    <input type="number" id="cv-horas" min="1" max="168" step="0.5" placeholder="40" />
+                  </div>
+                  <div class="form-field">
+                    <label for="cv-vigencia">Vigencia convenio <span class="form-required">*</span></label>
+                    <input type="date" id="cv-vigencia" />
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="button" id="btn-cancel-convenio" class="btn-secondary">Cancelar</button>
+                  <button type="button" id="btn-save-convenio" class="btn-primary">Guardar</button>
+                </div>
+                <div id="convenios-form-msg" class="form-msg" aria-live="polite"></div>
+              </div>
+            </div>
           </div>
-          <div id="settings-list" class="settings-list" aria-live="polite"></div>
-          <div id="settings-form-wrapper" class="settings-form-wrapper is-hidden">
-            <div class="settings-form-card">
-              <h3 id="settings-form-title">Nueva configuración</h3>
-              <div class="form-grid">
-                <div class="form-field form-field--full">
-                  <label for="s-nombre">Nombre</label>
-                  <input type="text" id="s-nombre" placeholder="Nombre de la configuración" maxlength="100" />
-                </div>
-                <div class="form-field">
-                  <label for="s-horas">Horas convenio</label>
-                  <input type="number" id="s-horas" min="1" max="168" step="0.5" placeholder="40" />
-                </div>
-                <div class="form-field">
-                  <label for="s-version">Versión</label>
-                  <input type="text" id="s-version" placeholder="1.0.0" maxlength="20" />
-                </div>
-              </div>
-              <div class="form-actions">
-                <button type="button" id="btn-cancel-setting" class="btn-secondary">Cancelar</button>
-                <button type="button" id="btn-save-setting" class="btn-primary">Guardar</button>
-              </div>
-              <div id="settings-form-msg" class="form-msg" aria-live="polite"></div>
+        </div>
+      </section>
+      <section id="config-tipos-trabajador" class="config-contratos-view is-hidden">
+        <div class="config-contratos-shell">
+          <div class="config-contratos-card">
+            <div class="config-contratos-header">
+              <h2>Tipos de trabajador</h2>
+              <p class="config-contratos-hint">Arrastra los tipos para reordenarlos. Ese orden se reflejará en el desplegable del formulario.</p>
+            </div>
+            <div class="config-contratos-add">
+              <input type="text" id="nuevo-tipo-trabajador" placeholder="Nuevo tipo de trabajador..." maxlength="100" />
+              <button type="button" id="btn-add-tipo-trabajador" class="btn-primary">Añadir</button>
+            </div>
+            <ul id="tipos-trabajador-list" class="tipos-list" aria-label="Tipos de trabajador"></ul>
+            <div class="config-contratos-actions">
+              <span id="tipos-trabajador-msg" class="form-msg" aria-live="polite"></span>
+              <button type="button" id="btn-save-tipos-trabajador-orden" class="btn-primary">Guardar orden</button>
             </div>
           </div>
         </div>

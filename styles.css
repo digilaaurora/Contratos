@@ -408,7 +408,8 @@ body {
   gap: 24px;
 }
 
-.emesa-config-card {
+.emesa-config-card,
+.emesa-config-app-card {
   border: none;
   background: #ffffff;
   border-radius: 24px;
@@ -425,7 +426,9 @@ body {
 }
 
 .emesa-config-card:hover,
-.emesa-config-card:focus-visible {
+.emesa-config-card:focus-visible,
+.emesa-config-app-card:hover,
+.emesa-config-app-card:focus-visible {
   transform: translateY(-2px);
   box-shadow: 0 14px 34px rgba(56, 128, 199, 0.16);
   outline: none;
@@ -450,6 +453,111 @@ body {
   padding: 40px 16px 16px;
   display: flex;
   justify-content: center;
+}
+
+/* ---- Editor de columnas ---- */
+.config-col-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.config-col-visible-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.config-col-visible-label input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: #4a7fb3;
+}
+
+.config-col-etiqueta {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #d0dce8;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #f7fafd;
+  color: #1e2d3d;
+  transition: border-color 0.15s;
+}
+
+.config-col-etiqueta:focus {
+  outline: none;
+  border-color: #4a7fb3;
+  background: #ffffff;
+}
+
+.config-col-field-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #7a9ab5;
+  background: #eaf1f8;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: "Courier New", monospace;
+  white-space: nowrap;
+}
+
+/* ---- Editor de globos ---- */
+.globo-config-item {
+  background: #f7fafd;
+  border: 1px solid #d8e8f4;
+  border-radius: 14px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.globo-config-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  background: #eaf1f8;
+  border-bottom: 1px solid #d8e8f4;
+}
+
+.globo-activo-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  user-select: none;
+}
+
+.globo-activo-label input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: #4a7fb3;
+  cursor: pointer;
+}
+
+.globo-config-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.globo-config-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+/* Subtítulo de card de configuración */
+.emesa-config-card__subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: #7a9ab5;
+  text-align: center;
+  margin-top: -12px;
 }
 
 .config-detail.is-hidden {
@@ -493,6 +601,48 @@ body {
 
 .config-settings-view.is-hidden {
   display: none;
+}
+
+/* ---- Config Convenios (Horas convenio) ---- */
+
+.config-convenios-view {
+  padding: 32px 16px 32px;
+}
+
+.config-convenios-view.is-hidden {
+  display: none;
+}
+
+.config-convenios-shell {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.config-convenios-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 32px 24px;
+  box-shadow: 0 4px 20px rgba(56, 128, 199, 0.08);
+}
+
+.config-convenios-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.config-convenios-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--color-primario);
+}
+
+.convenios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .config-settings-shell {
@@ -810,6 +960,30 @@ body {
   grid-column: 1 / -1;
 }
 
+/* Jornada hh:mm con decimal */
+.jornada-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jornada-input-wrapper input {
+  width: 90px;
+  flex: none;
+}
+
+.jornada-decimal {
+  font-size: 13px;
+  color: #64748b;
+  min-width: 52px;
+  font-variant-numeric: tabular-nums;
+}
+
+.jornada-decimal--valid {
+  color: var(--color-secundario);
+  font-weight: 600;
+}
+
 .form-field label {
   font-size: 13px;
   font-weight: 600;
@@ -901,6 +1075,56 @@ body {
 
 .form-msg--error {
   color: #b91c1c;
+}
+
+/* ---- Tablas de trabajadores ---- */
+.workers-table-wrapper {
+  overflow-x: auto;
+  margin-top: 8px;
+}
+
+.workers-table-loading,
+.workers-table-empty {
+  color: #64748b;
+  font-size: 14px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.workers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.workers-table thead tr {
+  background: #f1f5f9;
+}
+
+.workers-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid var(--color-borde);
+  white-space: nowrap;
+}
+
+.workers-table td {
+  padding: 10px 14px;
+  color: #1e293b;
+  border-bottom: 1px solid #e9edf2;
+  vertical-align: middle;
+}
+
+.workers-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 12px;
+  border-radius: 6px;
 }
 
 @media (max-width: 900px) {
