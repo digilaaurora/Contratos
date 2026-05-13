@@ -76,7 +76,7 @@
           </button>
           <button class="sidebar-item" type="button" data-section="cerrado">
             <span class="sidebar-icon">✅</span>
-            <span class="sidebar-text">Cerrado</span>
+            <span class="sidebar-text">Histórico de altas</span>
           </button>
         </nav>
 
@@ -211,7 +211,7 @@
         </section>
 
         <section id="cerrado" class="content-panel">
-          <h1>Cerrado</h1>
+          <h1>Histórico de altas</h1>
           <div id="cerrado-table-wrapper" class="workers-table-wrapper">
             <p class="workers-table-loading">Cargando...</p>
           </div>
@@ -245,74 +245,53 @@
         </div>
       </section>
 
-      <section id="config-app" class="emesa-config-menu-view is-hidden">
+      <section id="config-app" class="emesa-config-menu-view">
+        <div class="capp-split">
 
-        <!-- Sub-menú: qué configurar -->
-        <div id="config-app-menu" class="emesa-config-menu-shell">
-          <div class="emesa-config-menu-grid">
-            <button class="emesa-config-card" type="button" data-appconfig="firma-contrato">
-              <span class="emesa-config-card__icon" aria-hidden="true">✍️</span>
-              <span class="emesa-config-card__title">Firma contrato</span>
-              <span class="emesa-config-card__subtitle">Columnas</span>
-            </button>
-            <button class="emesa-config-card" type="button" data-appconfig="alta-ss">
-              <span class="emesa-config-card__icon" aria-hidden="true">🏥</span>
-              <span class="emesa-config-card__title">Alta SS</span>
-              <span class="emesa-config-card__subtitle">Columnas</span>
-            </button>
-            <button class="emesa-config-card" type="button" data-appconfig="registro-contrato">
-              <span class="emesa-config-card__icon" aria-hidden="true">📋</span>
-              <span class="emesa-config-card__title">Registro contrato</span>
-              <span class="emesa-config-card__subtitle">Columnas</span>
-            </button>
-            <button class="emesa-config-card" type="button" data-appconfig="carpeta">
-              <span class="emesa-config-card__icon" aria-hidden="true">📁</span>
-              <span class="emesa-config-card__title">Carpeta</span>
-              <span class="emesa-config-card__subtitle">Columnas</span>
-            </button>
-            <button class="emesa-config-card" type="button" data-appconfig="cerrado">
-              <span class="emesa-config-card__icon" aria-hidden="true">✅</span>
-              <span class="emesa-config-card__title">Cerrado</span>
-              <span class="emesa-config-card__subtitle">Columnas</span>
-            </button>
-            <button class="emesa-config-card" type="button" data-appconfig="globos">
-              <span class="emesa-config-card__icon" aria-hidden="true">🔔</span>
-              <span class="emesa-config-card__title">Globos</span>
-              <span class="emesa-config-card__subtitle">Sidebar</span>
-            </button>
+          <!-- Panel izquierdo: lista de pestañas con drag & drop -->
+          <aside class="capp-tabs-panel">
+            <div class="capp-tabs-header">
+              <h3 class="capp-tabs-title">Pestañas</h3>
+              <p class="capp-tabs-hint">Arrastra para reordenar.</p>
+            </div>
+            <ul id="capp-tabs-list" class="tipos-list capp-tabs-list" aria-label="Secciones del sidebar"></ul>
+            <div class="capp-tabs-actions">
+              <span id="capp-tabs-msg" class="form-msg" aria-live="polite"></span>
+              <button type="button" id="btn-save-capp-tabs" class="btn-primary btn-sm">Guardar orden</button>
+            </div>
+          </aside>
+
+          <!-- Panel derecho: editor de columnas o globos -->
+          <div class="capp-detail-panel">
+
+            <!-- Editor de columnas -->
+            <div id="capp-cols-panel" class="capp-inner-panel">
+              <div class="capp-detail-header">
+                <h3 id="capp-cols-title" class="capp-detail-title">Columnas</h3>
+                <p class="capp-detail-hint">Activa o desactiva columnas, edita su cabecera y arrastra para reordenarlas.</p>
+              </div>
+              <ul id="capp-cols-list" class="tipos-list" aria-label="Columnas de la tabla"></ul>
+              <div class="capp-detail-actions">
+                <span id="capp-cols-msg" class="form-msg" aria-live="polite"></span>
+                <button type="button" id="btn-save-capp-cols" class="btn-primary">Guardar</button>
+              </div>
+            </div>
+
+            <!-- Editor de globos -->
+            <div id="capp-globos-panel" class="capp-inner-panel" style="display:none">
+              <div class="capp-detail-header">
+                <h3 class="capp-detail-title">Globos del sidebar</h3>
+                <p class="capp-detail-hint">Configura qué contador mostrar junto a cada sección del menú lateral.</p>
+              </div>
+              <div id="capp-globos-list" aria-label="Globos del sidebar"></div>
+              <div class="capp-detail-actions">
+                <span id="capp-globos-msg" class="form-msg" aria-live="polite"></span>
+                <button type="button" id="btn-save-capp-globos" class="btn-primary">Guardar</button>
+              </div>
+            </div>
+
           </div>
         </div>
-
-        <!-- Editor de columnas (compartido para todas las secciones) -->
-        <div id="config-app-columnas" class="config-contratos-shell is-hidden">
-          <div class="config-contratos-card">
-            <div class="config-contratos-header">
-              <h2 id="config-app-columnas-title">Columnas</h2>
-              <p class="config-contratos-hint">Activa o desactiva columnas, edita su nombre y arrastra para reordenarlas.</p>
-            </div>
-            <ul id="config-app-columnas-list" class="tipos-list" aria-label="Columnas de la tabla"></ul>
-            <div class="config-contratos-actions">
-              <span id="config-app-columnas-msg" class="form-msg" aria-live="polite"></span>
-              <button type="button" id="btn-save-app-columnas" class="btn-primary">Guardar</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Editor de globos del sidebar -->
-        <div id="config-app-globos" class="config-contratos-shell is-hidden">
-          <div class="config-contratos-card">
-            <div class="config-contratos-header">
-              <h2>Globos del sidebar</h2>
-              <p class="config-contratos-hint">Configura qué contador mostrar junto a cada sección del menú lateral.</p>
-            </div>
-            <div id="config-app-globos-list" aria-label="Globos del sidebar"></div>
-            <div class="config-contratos-actions">
-              <span id="config-app-globos-msg" class="form-msg" aria-live="polite"></span>
-              <button type="button" id="btn-save-app-globos" class="btn-primary">Guardar</button>
-            </div>
-          </div>
-        </div>
-
       </section>
 
       <section id="config-detail" class="config-detail is-hidden">

@@ -98,7 +98,7 @@ const APP_SECCIONES = [
   { id: "alta-ss",           label: "Alta SS" },
   { id: "registro-contrato", label: "Registro contrato" },
   { id: "carpeta",           label: "Carpeta" },
-  { id: "cerrado",           label: "Cerrado" },
+  { id: "cerrado",           label: "Histórico de altas" },
 ];
 
 const ESTADOS_CAMPOS = [
@@ -130,7 +130,7 @@ function getLabelForTarget(target) {
   if (target === "alta-ss") return "Alta SS";
   if (target === "registro-contrato") return "Registro contrato";
   if (target === "carpeta") return "Carpeta";
-  if (target === "cerrado") return "Cerrado";
+  if (target === "cerrado") return "Histórico de altas";
   if (target === "config-app") return "App";
   if (target === "config-app-globos") return "Globos";
   if (target.startsWith("config-app-col-")) {
@@ -249,7 +249,7 @@ function _hideAllConfigSections() {
   if (configContratos) configContratos.classList.add("is-hidden");
   if (configConvenios) configConvenios.classList.add("is-hidden");
   if (configTiposTrabajador) configTiposTrabajador.classList.add("is-hidden");
-  if (configApp) configApp.classList.add("is-hidden");
+  if (configApp) configApp.classList.remove("active");
   configDetail.classList.add("is-hidden");
 }
 
@@ -265,8 +265,8 @@ function showConfigSection(sectionKey) {
 
   if (sectionKey === "app") {
     const el = document.getElementById("config-app");
-    if (el) el.classList.remove("is-hidden");
-    showConfigAppMenu();
+    if (el) el.classList.add("active");
+    initConfigApp();
     return;
   }
 
@@ -351,21 +351,13 @@ function navigateToBreadcrumb(target) {
 
   if (target === "config-app-globos") {
     showView("configuracion");
-    const el = document.getElementById("config-app");
-    if (el) el.classList.remove("is-hidden");
-    _hideAllConfigSections();
-    el.classList.remove("is-hidden");
-    showConfigAppGlobos();
+    showConfigSection("app");
     return;
   }
 
   if (target.startsWith("config-app-col-")) {
-    const sec = target.replace("config-app-col-", "");
     showView("configuracion");
-    const el = document.getElementById("config-app");
-    _hideAllConfigSections();
-    if (el) el.classList.remove("is-hidden");
-    showConfigAppColumnas(sec);
+    showConfigSection("app");
     return;
   }
 
@@ -906,9 +898,63 @@ function setupConfigConvenios() {
 
 // ---- Tablas de trabajadores por pestaña ----
 
-const TAB_COLUMNS = ["Nombre y apellidos", "Empresa", "Fecha inicio", "Tipo trabajador", "Tipo contrato", "Jornada"];
+const ALL_AVAILABLE_COLUMNS = [
+  { campo_db: "nombre_y_apellidos",   etiqueta: "Nombre y apellidos",   posOrig: 1 },
+  { campo_db: "empresa",              etiqueta: "Empresa",              posOrig: 2 },
+  { campo_db: "fecha_inicio",         etiqueta: "Fecha inicio",         posOrig: 3 },
+  { campo_db: "tipo_trabajador",      etiqueta: "Tipo trabajador",      posOrig: 4 },
+  { campo_db: "tipo_contrato",        etiqueta: "Tipo contrato",        posOrig: 5 },
+  { campo_db: "jornada",              etiqueta: "Jornada",              posOrig: 6 },
+  { campo_db: "descripcion_convenio", etiqueta: "Convenio",             posOrig: 7 },
+  { campo_db: "coeficiente",          etiqueta: "Coef.",                posOrig: 8 },
+  { campo_db: "codigo_ncs",           etiqueta: "Código NCS",           posOrig: 9 },
+  { campo_db: "fecha_firma_contrato", etiqueta: "Fecha firma contrato", posOrig: 10 },
+  { campo_db: "codigo_fichaje",       etiqueta: "Código fichaje",       posOrig: 11 },
+];
 
-function renderWorkersTable(wrapperId, rows, actionLabel, actionCallback) {
+const DEFAULT_VISIBLE_CAMPOS = ["nombre_y_apellidos", "empresa", "fecha_inicio", "tipo_trabajador", "tipo_contrato", "jornada", "descripcion_convenio", "coeficiente"];
+
+function calcCoeficiente(w) {
+  const conv = w.convenios;
+  if (!conv || w.jornada == null) return "-";
+  const j = parseFloat(w.jornada);
+  const h = parseFloat(conv.horas_convenio);
+  if (isNaN(j) || isNaN(h) || h === 0) return "-";
+  return (j / h).toFixed(3);
+}
+
+function getWorkerFieldValue(w, campo_db) {
+  if (campo_db === "descripcion_convenio") return w.convenios?.descripcion_convenio ?? "-";
+  if (campo_db === "coeficiente") return calcCoeficiente(w);
+  return w[campo_db] != null ? String(w[campo_db]) : "-";
+}
+
+async function getColumnaConfig(seccion) {
+  const defaults = ALL_AVAILABLE_COLUMNS
+    .filter(c => DEFAULT_VISIBLE_CAMPOS.includes(c.campo_db))
+    .map((c, i) => ({ campo_db: c.campo_db, etiqueta: c.etiqueta, orden: i + 1 }));
+
+  const client = window.supabaseClient;
+  if (!client) return defaults;
+
+  const { data: prefs } = await client
+    .schema("contratos")
+    .from("config_columnas")
+    .select("*")
+    .eq("seccion", seccion);
+
+  if (!prefs || prefs.length === 0) return defaults;
+
+  return prefs
+    .filter(p => p.visible)
+    .sort((a, b) => a.orden - b.orden)
+    .map(p => ({ campo_db: p.campo_db, etiqueta: p.etiqueta }));
+}
+
+function renderWorkersTable(wrapperId, rows, actionLabel, actionCallback, colConfig) {
+  const cols = colConfig || ALL_AVAILABLE_COLUMNS
+    .filter(c => DEFAULT_VISIBLE_CAMPOS.includes(c.campo_db))
+    .map(c => ({ campo_db: c.campo_db, etiqueta: c.etiqueta }));
   const wrapper = document.getElementById(wrapperId);
   if (!wrapper) return;
   if (!rows || rows.length === 0) {
@@ -920,7 +966,7 @@ function renderWorkersTable(wrapperId, rows, actionLabel, actionCallback) {
   table.innerHTML = `
     <thead>
       <tr>
-        ${TAB_COLUMNS.map(c => `<th>${c}</th>`).join("")}
+        ${cols.map(c => `<th>${escapeHtml(c.etiqueta)}</th>`).join("")}
         ${actionLabel ? "<th>Acción</th>" : ""}
       </tr>
     </thead>
@@ -929,15 +975,9 @@ function renderWorkersTable(wrapperId, rows, actionLabel, actionCallback) {
   rows.forEach((row) => {
     const w = row.alta_trabajadores || {};
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(w.nombre_y_apellidos ?? "-")}</td>
-      <td>${escapeHtml(w.empresa ?? "-")}</td>
-      <td>${escapeHtml(w.fecha_inicio ?? "-")}</td>
-      <td>${escapeHtml(w.tipo_trabajador ?? "-")}</td>
-      <td>${escapeHtml(w.tipo_contrato ?? "-")}</td>
-      <td>${escapeHtml(w.jornada != null ? String(w.jornada) : "-")}</td>
-      ${actionLabel ? `<td><button type="button" class="btn-primary btn-sm workers-table-action" data-estado-id="${row.id}">✔ ${escapeHtml(actionLabel)}</button></td>` : "<td>-</td>"}
-    `;
+    tr.innerHTML =
+      cols.map(c => `<td>${escapeHtml(getWorkerFieldValue(w, c.campo_db))}</td>`).join("") +
+      (actionLabel ? `<td><button type="button" class="btn-primary btn-sm workers-table-action" data-estado-id="${row.id}">✔ ${escapeHtml(actionLabel)}</button></td>` : "<td>-</td>");
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
@@ -959,16 +999,21 @@ async function loadTabEstados(wrapperId, filters, actionLabel, actionField) {
   const client = window.supabaseClient;
   if (!client) { wrapper.innerHTML = '<p class="workers-table-empty">Cliente no disponible.</p>'; return; }
 
+  const seccion = wrapperId.replace("-table-wrapper", "");
+
   let query = client
     .schema("contratos")
     .from("estados")
-    .select("id, id_trabajador, registrado, contrato_fdo, ss, registro_contrato, carpeta, alta_trabajadores(id, nombre_y_apellidos, empresa, fecha_inicio, tipo_trabajador, tipo_contrato, jornada)");
+    .select("id, id_trabajador, registrado, contrato_fdo, ss, registro_contrato, carpeta, alta_trabajadores(id, nombre_y_apellidos, empresa, fecha_inicio, tipo_trabajador, tipo_contrato, jornada, codigo_ncs, fecha_firma_contrato, codigo_fichaje, convenios(descripcion_convenio, horas_convenio))");
 
   for (const [field, value] of Object.entries(filters)) {
     query = query.eq(field, value);
   }
 
-  const { data, error } = await query.order("id_trabajador", { ascending: false });
+  const [{ data, error }, colConfig] = await Promise.all([
+    query.order("id_trabajador", { ascending: false }),
+    getColumnaConfig(seccion),
+  ]);
 
   if (error) {
     wrapper.innerHTML = `<p class="workers-table-empty">Error: ${escapeHtml(error.message)}</p>`;
@@ -987,18 +1032,124 @@ async function loadTabEstados(wrapperId, filters, actionLabel, actionField) {
     else loadTabEstados(wrapperId, filters, actionLabel, actionField);
   } : null;
 
-  renderWorkersTable(wrapperId, data, actionLabel, callback);
+  renderWorkersTable(wrapperId, data, actionLabel, callback, colConfig);
 }
 
-function loadFirmaContratoTab() {
-  loadTabEstados("firma-contrato-table-wrapper", { contrato_fdo: false }, "Marcar firmado", "contrato_fdo");
+async function loadFirmaContratoTab() {
+  const wrapperId = "firma-contrato-table-wrapper";
+  const wrapper = document.getElementById(wrapperId);
+  if (!wrapper) return;
+  wrapper.innerHTML = '<p class="workers-table-loading">Cargando...</p>';
+  const client = window.supabaseClient;
+  if (!client) { wrapper.innerHTML = '<p class="workers-table-empty">Cliente no disponible.</p>'; return; }
+
+  // Las columnas de input fijo nunca se incluyen en las display configurables
+  const FIRMA_FIXED = new Set(["fecha_firma_contrato", "codigo_fichaje"]);
+
+  const [{ data, error }, colConfig] = await Promise.all([
+    client
+      .schema("contratos")
+      .from("estados")
+      .select("id, id_trabajador, alta_trabajadores(id, nombre_y_apellidos, empresa, fecha_inicio, tipo_trabajador, tipo_contrato, jornada, codigo_ncs, fecha_firma_contrato, codigo_fichaje, convenios(descripcion_convenio, horas_convenio))")
+      .eq("contrato_fdo", false)
+      .order("id_trabajador", { ascending: false }),
+    getColumnaConfig("firma-contrato"),
+  ]);
+
+  if (error) { wrapper.innerHTML = `<p class="workers-table-empty">Error: ${escapeHtml(error.message)}</p>`; return; }
+  if (!data || data.length === 0) { wrapper.innerHTML = '<p class="workers-table-empty">No hay registros.</p>'; return; }
+
+  const displayCols = colConfig.filter(c => !FIRMA_FIXED.has(c.campo_db));
+
+  const table = document.createElement("table");
+  table.className = "workers-table";
+  table.innerHTML = `
+    <thead>
+      <tr>
+        ${displayCols.map(c => `<th>${escapeHtml(c.etiqueta)}</th>`).join("")}
+        <th>Fecha firma contrato</th>
+        <th>Código fichaje</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+  `;
+  const tbody = document.createElement("tbody");
+  data.forEach((row) => {
+    const w = row.alta_trabajadores || {};
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      displayCols.map(c => `<td>${escapeHtml(getWorkerFieldValue(w, c.campo_db))}</td>`).join("") +
+      `<td><input type="date" class="firma-fecha-input tabla-input" value="${escapeHtml(w.fecha_firma_contrato ?? "")}" /></td>
+       <td><input type="text" class="firma-codigo-input tabla-input" placeholder="Cód. fichaje" value="${escapeHtml(w.codigo_fichaje ?? "")}" /></td>
+       <td><button type="button" class="btn-primary btn-sm workers-table-action" data-estado-id="${row.id}" data-trabajador-id="${escapeHtml(String(w.id ?? ""))}" disabled>✔ Marcar firmado</button></td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrapper.innerHTML = "";
+  wrapper.appendChild(table);
+
+  function updateBtnState(tr) {
+    const fechaInput = tr.querySelector(".firma-fecha-input");
+    const codigoInput = tr.querySelector(".firma-codigo-input");
+    const btn = tr.querySelector(".workers-table-action");
+    if (fechaInput && codigoInput && btn) {
+      const fechaVal = fechaInput.value.trim();
+      const codigoVal = codigoInput.value.trim();
+      const today = new Date().toISOString().slice(0, 10);
+      const fechaValida = fechaVal && fechaVal <= today;
+      btn.disabled = !(fechaValida && codigoVal);
+    }
+  }
+
+  tbody.querySelectorAll("tr").forEach(updateBtnState);
+
+  wrapper.addEventListener("input", (e) => {
+    const tr = e.target.closest("tr");
+    if (tr) updateBtnState(tr);
+  });
+
+  wrapper.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".workers-table-action");
+    if (!btn || btn.disabled) return;
+    const estadoId = Number(btn.dataset.estadoId);
+    const trabajadorId = Number(btn.dataset.trabajadorId);
+    const tr = btn.closest("tr");
+    const fecha = tr.querySelector(".firma-fecha-input").value.trim();
+    const codigo = tr.querySelector(".firma-codigo-input").value.trim();
+    if (!fecha || !codigo) return;
+    btn.disabled = true;
+    btn.textContent = "Guardando...";
+    const { error: upTrabErr } = await client
+      .schema("contratos")
+      .from("alta_trabajadores")
+      .update({ fecha_firma_contrato: fecha, codigo_fichaje: codigo })
+      .eq("id", trabajadorId);
+    if (upTrabErr) {
+      btn.disabled = false;
+      btn.textContent = "✔ Marcar firmado";
+      alert(`Error: ${upTrabErr.message}`);
+      return;
+    }
+    const { error: upEstErr } = await client
+      .schema("contratos")
+      .from("estados")
+      .update({ contrato_fdo: true })
+      .eq("id", estadoId);
+    if (upEstErr) {
+      btn.disabled = false;
+      btn.textContent = "✔ Marcar firmado";
+      alert(`Error: ${upEstErr.message}`);
+      return;
+    }
+    loadFirmaContratoTab();
+  });
 }
 
 function loadAltaSSTab() {
   loadTabEstados("alta-ss-table-wrapper", { ss: false }, "Marcar SS hecha", "ss");
 }
 
-function loadRegistroContratoTab() {
+async function loadRegistroContratoTab() {
   // Mostrar cuando registrado=true, contrato_fdo=true, ss=true, registro_contrato=false
   const wrapper = document.getElementById("registro-contrato-table-wrapper");
   if (!wrapper) return;
@@ -1006,25 +1157,29 @@ function loadRegistroContratoTab() {
   const client = window.supabaseClient;
   if (!client) { wrapper.innerHTML = '<p class="workers-table-empty">Cliente no disponible.</p>'; return; }
 
-  client
+  const query = client
     .schema("contratos")
     .from("estados")
-    .select("id, id_trabajador, alta_trabajadores(id, nombre_y_apellidos, empresa, fecha_inicio, tipo_trabajador, tipo_contrato, jornada)")
+    .select("id, id_trabajador, alta_trabajadores(id, nombre_y_apellidos, empresa, fecha_inicio, tipo_trabajador, tipo_contrato, jornada, codigo_ncs, fecha_firma_contrato, codigo_fichaje, convenios(descripcion_convenio, horas_convenio))")
     .eq("registrado", true)
     .eq("contrato_fdo", true)
     .eq("ss", true)
     .eq("registro_contrato", false)
-    .order("id_trabajador", { ascending: false })
-    .then(({ data, error }) => {
-      if (error) { wrapper.innerHTML = `<p class="workers-table-empty">Error: ${escapeHtml(error.message)}</p>`; return; }
-      renderWorkersTable("registro-contrato-table-wrapper", data, "Marcar registrado", async (estadoId, btn) => {
-        btn.disabled = true;
-        btn.textContent = "Guardando...";
-        const { error: upErr } = await client.schema("contratos").from("estados").update({ registro_contrato: true }).eq("id", estadoId);
-        if (upErr) { btn.disabled = false; btn.textContent = "✔ Marcar registrado"; alert(`Error: ${upErr.message}`); }
-        else loadRegistroContratoTab();
-      });
-    });
+    .order("id_trabajador", { ascending: false });
+
+  const [{ data, error }, colConfig] = await Promise.all([
+    query,
+    getColumnaConfig("registro-contrato"),
+  ]);
+
+  if (error) { wrapper.innerHTML = `<p class="workers-table-empty">Error: ${escapeHtml(error.message)}</p>`; return; }
+  renderWorkersTable("registro-contrato-table-wrapper", data, "Marcar registrado", async (estadoId, btn) => {
+    btn.disabled = true;
+    btn.textContent = "Guardando...";
+    const { error: upErr } = await client.schema("contratos").from("estados").update({ registro_contrato: true }).eq("id", estadoId);
+    if (upErr) { btn.disabled = false; btn.textContent = "✔ Marcar registrado"; alert(`Error: ${upErr.message}`); }
+    else loadRegistroContratoTab();
+  }, colConfig);
 }
 
 function loadCarpetaTab() {
@@ -1067,38 +1222,76 @@ function setupConfigCards() {
 
 // ---- Configuración App ----
 
-let _configAppColumnasSeccActual = null;
+// ---- Configuración App (split layout) ----
 
-function showConfigAppMenu() {
-  document.getElementById("config-app-menu").classList.remove("is-hidden");
-  document.getElementById("config-app-columnas").classList.add("is-hidden");
-  document.getElementById("config-app-globos").classList.add("is-hidden");
+const CAPP_GLOBOS_ID = "__globos__";
+let _cappSelectedSection = null;
+
+function _cappSectionOrder() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("la_capp_section_order") || "null");
+    if (saved && Array.isArray(saved)) {
+      const allIds = [...APP_SECCIONES.map(s => s.id), CAPP_GLOBOS_ID];
+      const filtered = saved.filter(id => allIds.includes(id));
+      const missing  = allIds.filter(id => !filtered.includes(id));
+      return [...filtered, ...missing].map(id =>
+        id === CAPP_GLOBOS_ID
+          ? { id: CAPP_GLOBOS_ID, label: "Globos" }
+          : APP_SECCIONES.find(s => s.id === id)
+      ).filter(Boolean);
+    }
+  } catch (e) {}
+  return [...APP_SECCIONES, { id: CAPP_GLOBOS_ID, label: "Globos" }];
+}
+
+function initConfigApp() {
+  renderCappTabsList();
+  const firstId = _cappSectionOrder()[0]?.id;
+  if (firstId) selectCappSection(firstId);
   updateBreadcrumb("config-app");
 }
 
-function showConfigAppColumnas(seccion) {
-  document.getElementById("config-app-menu").classList.add("is-hidden");
-  document.getElementById("config-app-columnas").classList.remove("is-hidden");
-  document.getElementById("config-app-globos").classList.add("is-hidden");
-  const sec = APP_SECCIONES.find(s => s.id === seccion);
-  document.getElementById("config-app-columnas-title").textContent =
-    "Columnas — " + (sec ? sec.label : seccion);
-  _configAppColumnasSeccActual = seccion;
-  loadAppColumnas(seccion);
-  updateBreadcrumb("config-app-col-" + seccion);
+function renderCappTabsList() {
+  const list = document.getElementById("capp-tabs-list");
+  list.innerHTML = "";
+  _cappSectionOrder().forEach(sec => {
+    const li = document.createElement("li");
+    li.className = "capp-tab-item tipo-item";
+    li.dataset.seccion = sec.id;
+    li.draggable = true;
+    li.innerHTML = `
+      <span class="tipo-drag-handle" aria-hidden="true">⠇</span>
+      <button type="button" class="capp-tab-btn">${escapeHtml(sec.label)}</button>
+    `;
+    li.querySelector(".capp-tab-btn").addEventListener("click", () => selectCappSection(sec.id));
+    list.appendChild(li);
+  });
+  setupDragAndDrop(list);
 }
 
-function showConfigAppGlobos() {
-  document.getElementById("config-app-menu").classList.add("is-hidden");
-  document.getElementById("config-app-columnas").classList.add("is-hidden");
-  document.getElementById("config-app-globos").classList.remove("is-hidden");
-  loadAppGlobos();
-  updateBreadcrumb("config-app-globos");
+function selectCappSection(seccionId) {
+  _cappSelectedSection = seccionId;
+  document.querySelectorAll("#capp-tabs-list .capp-tab-item").forEach(li => {
+    li.classList.toggle("is-active", li.dataset.seccion === seccionId);
+  });
+  const colsPanel   = document.getElementById("capp-cols-panel");
+  const globosPanel = document.getElementById("capp-globos-panel");
+  if (seccionId === CAPP_GLOBOS_ID) {
+    colsPanel.style.display   = "none";
+    globosPanel.style.display = "";
+    loadCappGlobos();
+  } else {
+    colsPanel.style.display   = "";
+    globosPanel.style.display = "none";
+    const sec = APP_SECCIONES.find(s => s.id === seccionId);
+    document.getElementById("capp-cols-title").textContent = sec ? sec.label : seccionId;
+    loadCappColumnas(seccionId);
+  }
 }
 
-async function loadAppColumnas(seccion) {
-  const list = document.getElementById("config-app-columnas-list");
-  const msg  = document.getElementById("config-app-columnas-msg");
+async function loadCappColumnas(seccion) {
+  const list = document.getElementById("capp-cols-list");
+  const msg  = document.getElementById("capp-cols-msg");
   list.innerHTML = '<li class="tipos-list-loading">Cargando...</li>';
   msg.textContent = "";
   msg.className = "form-msg";
@@ -1109,17 +1302,6 @@ async function loadAppColumnas(seccion) {
     return;
   }
 
-  // 1. Columnas reales vía RPC
-  const { data: allCols, error: rpcErr } = await client
-    .schema("contratos")
-    .rpc("get_columnas_alta_trabajadores");
-
-  const columnasBD = (rpcErr || !allCols)
-    ? ["nombre_y_apellidos","empresa","fecha_inicio","tipo_trabajador","tipo_contrato","jornada"]
-        .map((c, i) => ({ campo_db: c, tipo_dato: "text", posicion_original: i + 1 }))
-    : allCols;
-
-  // 2. Preferencias guardadas
   const { data: prefs } = await client
     .schema("contratos")
     .from("config_columnas")
@@ -1129,15 +1311,15 @@ async function loadAppColumnas(seccion) {
   const prefsMap = {};
   (prefs || []).forEach(p => { prefsMap[p.campo_db] = p; });
 
-  // 3. Merge: visibles primero (por orden), luego ocultas (por posición original)
-  const merged = columnasBD.map((col, idx) => {
+  const merged = ALL_AVAILABLE_COLUMNS.map((col) => {
     const pref = prefsMap[col.campo_db] || {};
+    const hasPrefs = pref.campo_db != null;
     return {
-      campo_db:  col.campo_db,
-      etiqueta:  pref.etiqueta != null ? pref.etiqueta : col.campo_db,
-      orden:     pref.orden    != null ? pref.orden    : 999,
-      visible:   pref.visible  != null ? pref.visible  : false,
-      posOrig:   col.posicion_original || idx + 1,
+      campo_db: col.campo_db,
+      etiqueta: pref.etiqueta != null ? pref.etiqueta : col.etiqueta,
+      orden:    pref.orden    != null ? pref.orden    : col.posOrig,
+      visible:  hasPrefs ? pref.visible : DEFAULT_VISIBLE_CAMPOS.includes(col.campo_db),
+      posOrig:  col.posOrig,
     };
   }).sort((a, b) => {
     if (a.visible && !b.visible) return -1;
@@ -1146,11 +1328,11 @@ async function loadAppColumnas(seccion) {
     return a.posOrig - b.posOrig;
   });
 
-  renderAppColumnasList(merged);
+  renderCappColumnasList(merged);
 }
 
-function renderAppColumnasList(columnas) {
-  const list = document.getElementById("config-app-columnas-list");
+function renderCappColumnasList(columnas) {
+  const list = document.getElementById("capp-cols-list");
   list.innerHTML = "";
   if (!columnas.length) {
     list.innerHTML = '<li class="tipos-list-empty">No hay columnas disponibles.</li>';
@@ -1174,12 +1356,12 @@ function renderAppColumnasList(columnas) {
   setupDragAndDrop(list);
 }
 
-async function saveAppColumnas() {
-  const list    = document.getElementById("config-app-columnas-list");
-  const msg     = document.getElementById("config-app-columnas-msg");
-  const btn     = document.getElementById("btn-save-app-columnas");
-  const seccion = _configAppColumnasSeccActual;
-  if (!seccion) return;
+async function saveCappColumnas() {
+  const list    = document.getElementById("capp-cols-list");
+  const msg     = document.getElementById("capp-cols-msg");
+  const btn     = document.getElementById("btn-save-capp-cols");
+  const seccion = _cappSelectedSection;
+  if (!seccion || seccion === CAPP_GLOBOS_ID) return;
 
   btn.disabled = true;
   btn.textContent = "Guardando...";
@@ -1220,9 +1402,19 @@ async function saveAppColumnas() {
   }
 }
 
-async function loadAppGlobos() {
-  const container = document.getElementById("config-app-globos-list");
-  const msg       = document.getElementById("config-app-globos-msg");
+function saveCappTabsOrden() {
+  const list  = document.getElementById("capp-tabs-list");
+  const msg   = document.getElementById("capp-tabs-msg");
+  const order = [...list.querySelectorAll(".capp-tab-item")].map(li => li.dataset.seccion);
+  localStorage.setItem("la_capp_section_order", JSON.stringify(order));
+  msg.textContent = "Orden guardado.";
+  msg.className = "form-msg form-msg--success";
+  setTimeout(() => { msg.textContent = ""; msg.className = "form-msg"; }, 2000);
+}
+
+async function loadCappGlobos() {
+  const container = document.getElementById("capp-globos-list");
+  const msg       = document.getElementById("capp-globos-msg");
   container.innerHTML = '<p class="workers-table-loading">Cargando...</p>';
   msg.textContent = "";
   msg.className = "form-msg";
@@ -1244,33 +1436,26 @@ async function loadAppGlobos() {
     return;
   }
 
-  renderGlobosEditor(data || []);
+  renderCappGlobosEditor(data || [], container);
 }
 
-function renderGlobosEditor(rows) {
-  const container = document.getElementById("config-app-globos-list");
+function renderCappGlobosEditor(rows, container) {
   container.innerHTML = "";
-
   if (!rows.length) {
     container.innerHTML = '<p class="workers-table-empty">No hay secciones configuradas.</p>';
     return;
   }
-
   rows.forEach(row => {
     const secLabel = APP_SECCIONES.find(s => s.id === row.seccion)?.label || row.seccion;
-
     const estadoOpts = ESTADOS_CAMPOS.map(o =>
       `<option value="${o.value}" ${(row.campo_estado || "") === o.value ? "selected" : ""}>${escapeHtml(o.label)}</option>`
     ).join("");
-
     const fechaOpts = FECHA_CAMPOS.map(o =>
       `<option value="${o.value}" ${(row.campo_fecha || "") === o.value ? "selected" : ""}>${escapeHtml(o.label)}</option>`
     ).join("");
-
     const filtroOpts = FILTRO_FECHA_OPTS.map(o =>
       `<option value="${o.value}" ${row.filtro_fecha === o.value ? "selected" : ""}>${escapeHtml(o.label)}</option>`
     ).join("");
-
     const div = document.createElement("div");
     div.className = "globo-config-item";
     div.dataset.id      = row.id;
@@ -1314,10 +1499,10 @@ function renderGlobosEditor(rows) {
   });
 }
 
-async function saveAppGlobos() {
-  const container = document.getElementById("config-app-globos-list");
-  const msg       = document.getElementById("config-app-globos-msg");
-  const btn       = document.getElementById("btn-save-app-globos");
+async function saveCappGlobos() {
+  const container = document.getElementById("capp-globos-list");
+  const msg       = document.getElementById("capp-globos-msg");
+  const btn       = document.getElementById("btn-save-capp-globos");
 
   btn.disabled = true;
   btn.textContent = "Guardando...";
@@ -1362,20 +1547,12 @@ async function saveAppGlobos() {
 }
 
 function setupConfigApp() {
-  const appMenu = document.getElementById("config-app-menu");
-  if (appMenu) {
-    appMenu.addEventListener("click", e => {
-      const card = e.target.closest("[data-appconfig]");
-      if (!card) return;
-      const target = card.dataset.appconfig;
-      if (target === "globos") showConfigAppGlobos();
-      else showConfigAppColumnas(target);
-    });
-  }
-  const btnCols   = document.getElementById("btn-save-app-columnas");
-  const btnGlobos = document.getElementById("btn-save-app-globos");
-  if (btnCols)   btnCols.addEventListener("click", saveAppColumnas);
-  if (btnGlobos) btnGlobos.addEventListener("click", saveAppGlobos);
+  const btnCols   = document.getElementById("btn-save-capp-cols");
+  const btnGlobos = document.getElementById("btn-save-capp-globos");
+  const btnTabs   = document.getElementById("btn-save-capp-tabs");
+  if (btnCols)   btnCols.addEventListener("click", saveCappColumnas);
+  if (btnGlobos) btnGlobos.addEventListener("click", saveCappGlobos);
+  if (btnTabs)   btnTabs.addEventListener("click", saveCappTabsOrden);
 }
 
 function setupBreadcrumb() {
